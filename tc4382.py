@@ -10,10 +10,10 @@ class Tc4382(HardwareSensorBase):
         """Instantiate a Tc4382 driver object."""
 
         super().__init__(log, logfile)
-        self.read_timeout = read_timeout
-        self.client = None
-        self.port = None
-        self.baudrate = None
+        self.read_timeout: float = read_timeout
+        self.client: ModbusSerialClient | None = None
+        self.port:str | None = None
+        self.baudrate:int | None = None
 
     def connect(self, port: str, baud: int = 115200):  # pylint: disable=W0221
         """Connect to a Tc4382 Cryocooler device."""
@@ -37,3 +37,8 @@ class Tc4382(HardwareSensorBase):
         else:
             self.report_error("Modbus not connected")
             self._set_connected(False)
+
+    def read_registers(self, registers: int) -> None:
+        """Read registers from a Tc4382 Cryocooler device."""
+        regs = self.client.read_input_registers(registers)
+        print(regs.registers)
