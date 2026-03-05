@@ -12,7 +12,7 @@ def find_port() -> str | None:
     ports = comports()
     for port in ports:
         if port.manufacturer:
-            if 'FTDI' in port.manufacturer:
+            if 'FTDI' in port.manufacturer or 'Silicon Labs' in port.manufacturer:
                 return port.device
         return None
     return None
