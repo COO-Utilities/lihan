@@ -3,7 +3,6 @@ import time
 from typing import Union
 import serial
 from serial.tools.list_ports import comports
-# from pymodbus.client import ModbusSerialClient
 
 from hardware_device_base import HardwareSensorBase
 
@@ -14,7 +13,6 @@ def find_port() -> str | None:
         if port.manufacturer:
             if 'FTDI' in port.manufacturer:
                 return port.device
-        return None
     return None
 
 def calculate_crc16(data):
@@ -37,7 +35,6 @@ class Tc4382(HardwareSensorBase):
 
         super().__init__(log, logfile)
         self.read_timeout: float = read_timeout
-        # self.client: ModbusSerialClient | None = None
         self.ser = None
         self.port:str | None = None
         self.baudrate:int | None = None
@@ -47,7 +44,7 @@ class Tc4382(HardwareSensorBase):
         self.report_info(f"Connecting to Lihan on {port}...")
         self.port = port
         self.baudrate = baud
-        self.ser = serial.Serial(port=self.port, baudrate=self.baudrate)
+        self.ser = serial.Serial(port=self.port, baudrate=self.baudrate, timeout=self.read_timeout)
         time.sleep(1)
         self.report_info("Lihan connected")
         self._set_connected(True)
@@ -55,7 +52,7 @@ class Tc4382(HardwareSensorBase):
     def disconnect(self):
         """Disconnect from a Tc4382 Cryocooler device."""
         if self.ser:
-            if self.ser.is_open():
+            if self.ser.is_open:
                 self.ser.close()
             else:
                 self.report_warning("Lihan not connected")
@@ -72,10 +69,12 @@ class Tc4382(HardwareSensorBase):
         cmd += crc.to_bytes(2, 'little')
 
         self.ser.reset_input_buffer()
-        self.ser.write(cmd)
+        write_response = self.ser.write(cmd)
+        self.report_debug(f"read_register: write response: {write_response}")
         time.sleep(0.1)
 
         response = self.ser.read(100)
+        self.report_debug(f"read_register: read response: {response}")
         if len(response) >= 5:
             return int.from_bytes(response[3:5], byteorder='big')
         return None
@@ -87,10 +86,12 @@ class Tc4382(HardwareSensorBase):
         cmd += crc.to_bytes(2, 'little')
 
         self.ser.reset_input_buffer()
-        self.ser.write(cmd)
+        write_response = self.ser.write(cmd)
+        self.report_debug(f"read_holding_register: write response: {write_response}")
         time.sleep(0.1)
 
         response = self.ser.read(100)
+        self.report_debug(f"read_holding_register: read response: {response}")
         if len(response) >= 5:
             return int.from_bytes(response[3:5], byteorder='big')
         return None
