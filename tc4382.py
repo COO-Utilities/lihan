@@ -195,4 +195,6 @@ class Tc4382(HardwareSensorBase):
             retval = self.read_register(13)
         elif "setpoint" in item:
             retval = self.get_setpoint()
+        else:
+            self.report_warning(f"Not a legal item: {item}")
         return retval
