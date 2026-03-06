@@ -103,24 +103,35 @@ class Tc4382(HardwareSensorBase):
         cmd += crc.to_bytes(2, 'little')
 
         self.ser.reset_input_buffer()
-        self.ser.write(cmd)
+        write_response = self.ser.write(cmd)
+        self.report_debug(f"write_holding_register: write response: {write_response}")
         time.sleep(0.1)
+
         response = self.ser.read(100)
+        self.report_debug(f"write_holding_register: read response: {response}")
         return len(response) > 0
 
     def start(self):
         """Start the cryocooler"""
         cmd = bytes.fromhex('01050020FF008DF0')
-        self.ser.write(cmd)
+        write_response = self.ser.write(cmd)
+        self.report_debug(f"start: write response: {write_response}")
         time.sleep(0.5)
-        return len(self.ser.read(100)) > 0
+
+        response = self.ser.read(100)
+        self.report_debug(f"start: read response: {response}")
+        return len(response) > 0
 
     def stop(self):
         """Stop the cryocooler"""
         cmd = bytes.fromhex('010500200000CC00')
-        self.ser.write(cmd)
+        write_response = self.ser.write(cmd)
+        self.report_debug(f"stop: write response: {write_response}")
         time.sleep(0.5)
-        return len(self.ser.read(100)) > 0
+
+        response = self.ser.read(100)
+        self.report_debug(f"stop: read response: {response}")
+        return len(response) > 0
 
     def set_temperature(self, temp_k):
         """Set target temperature in Kelvin"""
@@ -130,6 +141,7 @@ class Tc4382(HardwareSensorBase):
     def get_coldhead_temp(self):
         """Get coldhead temperature in Kelvin"""
         temp_raw = self.read_register(9)
+        self.report_debug(f"get_coldhead_temp raw value: {temp_raw}")
         if temp_raw:
             return temp_raw / 10.0
         return None
@@ -137,21 +149,25 @@ class Tc4382(HardwareSensorBase):
     def get_setpoint(self):
         """Get temperature setpoint in Kelvin"""
         setpoint_raw = self.read_holding_register(2)
+        self.report_debug(f"get_setpoint raw value: {setpoint_raw}")
         if setpoint_raw:
             return setpoint_raw / 10.0
         return None
 
     def _send_command(self, *args, **kwargs):
         """Send a command to the Tc4382 Cryocooler device."""
+        self.report_warning("Not implemented")
         return None
 
     def _read_reply(self) -> Union[str, None]:
         """Read a reply from the Tc4382 Cryocooler device."""
+        self.report_warning("Not implemented")
         return None
 
     # pylint: disable=too-many-branches
     def get_atomic_value(self, item: str ="") -> Union[float, int, str, None]:
         """Read a value from the Tc4382 Cryocooler device."""
+        self.report_debug(f"Geting {item}")
         retval = None
         if "cold_head_temp" in item:
             retval =  self.get_coldhead_temp()
