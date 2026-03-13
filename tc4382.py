@@ -62,7 +62,7 @@ class Tc4382(HardwareSensorBase):
             self.report_error("Lihan not connected")
             self._set_connected(False)
 
-    def read_register(self, address):
+    def read_register(self, address) -> int | None:
         """Read a single input register"""
         cmd = bytes([0x01, 0x04, 0x00, address, 0x00, 0x01])
         crc = calculate_crc16(cmd)
@@ -79,7 +79,7 @@ class Tc4382(HardwareSensorBase):
             return int.from_bytes(response[3:5], byteorder='big')
         return None
 
-    def read_holding_register(self, address):
+    def read_holding_register(self, address) -> int | None:
         """Read a single holding register (for setpoints)"""
         cmd = bytes([0x01, 0x03, 0x00, address, 0x00, 0x01])
         crc = calculate_crc16(cmd)
@@ -96,7 +96,7 @@ class Tc4382(HardwareSensorBase):
             return int.from_bytes(response[3:5], byteorder='big')
         return None
 
-    def write_holding_register(self, address, value):
+    def write_holding_register(self, address, value) -> bool:
         """Write single holding register"""
         cmd = bytes([0x01, 0x06]) + address.to_bytes(2, 'big') + value.to_bytes(2, 'big')
         crc = calculate_crc16(cmd)
@@ -111,7 +111,7 @@ class Tc4382(HardwareSensorBase):
         self.report_debug(f"write_holding_register: read response: {response}")
         return len(response) > 0
 
-    def start(self):
+    def start(self) -> bool:
         """Start the cryocooler"""
         cmd = bytes.fromhex('01050020FF008DF0')
         write_response = self.ser.write(cmd)
@@ -122,7 +122,7 @@ class Tc4382(HardwareSensorBase):
         self.report_debug(f"start: read response: {response}")
         return len(response) > 0
 
-    def stop(self):
+    def stop(self) -> bool:
         """Stop the cryocooler"""
         cmd = bytes.fromhex('010500200000CC00')
         write_response = self.ser.write(cmd)
@@ -133,12 +133,12 @@ class Tc4382(HardwareSensorBase):
         self.report_debug(f"stop: read response: {response}")
         return len(response) > 0
 
-    def set_temperature(self, temp_k):
+    def set_temperature(self, temp_k) -> bool:
         """Set target temperature in Kelvin"""
         temp_raw = int(temp_k)  # Don't multiply by 10!
         return self.write_holding_register(2, temp_raw)
 
-    def get_coldhead_temp(self):
+    def get_coldhead_temp(self) -> float | None:
         """Get coldhead temperature in Kelvin"""
         temp_raw = self.read_register(9)
         self.report_debug(f"get_coldhead_temp raw value: {temp_raw}")
@@ -169,6 +169,10 @@ class Tc4382(HardwareSensorBase):
         """Read a value from the Tc4382 Cryocooler device."""
         self.report_debug(f"Geting {item}")
         retval = None
+        if "help" in item:
+            print("Available items:\ncold_head_temp\nreject_temp\nmotor_temp\ncontroller_temp\n"
+                  "ambient_temp\nvoltage\ncurrent\npower\nsetpoint")
+            return retval
         if "cold_head_temp" in item:
             retval =  self.get_coldhead_temp()
         elif "reject_temp" in item:
