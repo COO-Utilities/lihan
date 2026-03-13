@@ -157,12 +157,10 @@ class Tc4382(HardwareSensorBase):
     def _send_command(self, *args, **kwargs):
         """Send a command to the Tc4382 Cryocooler device."""
         self.report_warning("Not implemented")
-        return None
 
     def _read_reply(self) -> Union[str, None]:
         """Read a reply from the Tc4382 Cryocooler device."""
         self.report_warning("Not implemented")
-        return None
 
     # pylint: disable=too-many-branches
     def get_atomic_value(self, item: str ="") -> Union[float, int, str, None]:
