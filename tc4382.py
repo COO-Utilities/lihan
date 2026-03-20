@@ -174,19 +174,19 @@ class Tc4382(HardwareSensorBase):
         if "cold_head_temp" in item:
             retval =  self.get_coldhead_temp()
         elif "reject_temp" in item:
-            reject_temp = self.read_register(15)
+            reject_temp = self.read_register(17)
             if reject_temp:
                 retval = reject_temp / 10.0
         elif "motor_temp" in item:
-            motor_temp = self.read_register(16)
+            motor_temp = self.read_register(18)
             if motor_temp:
                 retval = motor_temp / 10.0
         elif "controller_temp" in item:
-            controller_temp = self.read_register(17)
+            controller_temp = self.read_register(19)
             if controller_temp:
                 retval = controller_temp / 10.0
         elif "ambient_temp" in item:
-            ambient_temp = self.read_register(18)
+            ambient_temp = self.read_register(20)
             if ambient_temp:
                 retval = ambient_temp / 10.0
         elif "voltage" in item:
