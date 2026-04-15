@@ -160,7 +160,6 @@ class Tc4382(HardwareSensorBase):
         self.report_debug(f"status raw: {status}")
         stat = []
         stat_no = 0
-        stat_str = ""
         if status is not None:
             # bit 0
             if status & (1 << 0) != 0:
@@ -177,6 +176,35 @@ class Tc4382(HardwareSensorBase):
                 stat_str = ",".join(stat)
                 self._set_status((stat_no, stat_str))
                 return stat_str
+            return None
+        return None
+
+    def get_device_configuration(self):
+        """Get controller configuration"""
+        config = self.read_holding_register(30)
+        self.report_debug(f"config raw: {config}")
+        conf = []
+        if config is not None:
+            # bit 0
+            if config & (1 << 0) != 0:
+                conf.append("Temp PID enable")
+            if config & (1 << 1) != 0:
+                conf.append("Temp cooling rate control")
+            if config & (1 << 2) != 0:
+                conf.append("Htr compensation")
+            if config & (1 << 3) != 0:
+                conf.append("Rej/Motor temp detect")
+            if config & (1 << 4) != 0:
+                conf.append("Power On recovery")
+            if config & (1 << 5) != 0:
+                conf.append("Power On autostart")
+            if config & (1 << 6) != 0:
+                conf.append("Pressure PID control")
+            if config & (1 << 7) != 0:
+                conf.append("Overtemp reduction")
+            if conf:
+                conf_str = ",".join(conf)
+                return conf_str
             return None
         return None
 
@@ -226,9 +254,9 @@ class Tc4382(HardwareSensorBase):
         elif "mode" in item:
             retval = self.read_register(3)
         elif "uptime" in item:
-            retval = self.read_register(26)
-        elif "total_uptime" in item:
             retval = self.read_register(27)
+        elif "total_uptime" in item:
+            retval = self.read_register(26)
         else:
             self.report_warning(f"Not a legal item: {item}")
         return retval
