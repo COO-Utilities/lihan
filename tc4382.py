@@ -223,7 +223,7 @@ class Tc4382(HardwareSensorBase):
         retval = None
         if "help" in item:
             print("Available items:\ncold_head_temp\nreject_temp\nmotor_temp\ncontroller_temp\n"
-                  "ambient_temp\nvoltage\ncurrent\npower\nsetpoint")
+                  "ambient_temp\nvoltage\ncurrent\npower\nsetpoint\nmode\nuptime\ntotal_uptime")
             return retval
         if "cold_head_temp" in item:
             retval =  self.get_coldhead_temp()
@@ -254,9 +254,9 @@ class Tc4382(HardwareSensorBase):
         elif "mode" in item:
             retval = self.read_register(3)
         elif "uptime" in item:
-            retval = self.read_register(27)
-        elif "total_uptime" in item:
             retval = self.read_register(26)
+        elif "total_uptime" in item:
+            retval = self.read_register(27)
         else:
             self.report_warning(f"Not a legal item: {item}")
         return retval
