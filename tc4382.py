@@ -154,6 +154,32 @@ class Tc4382(HardwareSensorBase):
             return setpoint_raw / 10.0
         return None
 
+    def get_status(self):
+        """Get controller status"""
+        status = self.read_register(2)
+        self.report_debug(f"status raw: {status}")
+        stat = []
+        stat_no = 0
+        stat_str = ""
+        if status is not None:
+            # bit 0
+            if status & (1 << 0) != 0:
+                stat.append("Running")
+            if status & (1 << 1) != 0:
+                stat.append("Fault")
+            if status & (1 << 2) != 0:
+                stat.append("Control stability")
+            if status & (1 << 3) != 0:
+                stat.append("Power off")
+            if "Fault" in stat or "Control stability" in stat or "Power off" in stat:
+                stat_no = -1
+            if stat:
+                stat_str = ",".join(stat)
+                self._set_status((stat_no, stat_str))
+                return stat_str
+            return None
+        return None
+
     def _send_command(self, *args, **kwargs):
         """Send a command to the Tc4382 Cryocooler device."""
         self.report_warning("Not implemented")
