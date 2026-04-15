@@ -26,7 +26,7 @@ pip install .
 import tc4382
 
 port = tc4382.find_port()
-controller = tc4382.Tc4382()    # defaults to 336
+controller = tc4382.Tc4382()
 controller.connect(port, 4800)  # USB port and baud rate
 
 # start cryocooler
@@ -40,6 +40,12 @@ print(controller.get_coldhead_temp())
 
 # Print setpoint
 print(controller.get_setpoint())
+
+# Get atomic telemetry values
+print(controller.get_atomic_value("cold_head_temp"))
+
+# List all available atomic items
+controller.get_atomic_value("help")
 
 # For a comprehensive list of classes and methods, use the help function
 help(tc4382)
@@ -76,5 +82,7 @@ classDiagram
         set_temperature() Bool
         get_coldhead_temp() float | None
         get_setpoint() float | None
+        get_device_status() String | None
+        get_device_configuration() String | None
     }
 ```
