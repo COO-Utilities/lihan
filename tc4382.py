@@ -46,6 +46,8 @@ class Tc4382(HardwareSensorBase):
         self.baudrate = baud
         self.ser = serial.Serial(port=self.port, baudrate=self.baudrate, timeout=self.read_timeout)
         time.sleep(1)
+        # clear input buffer
+        self.ser.reset_input_buffer()
         self.report_info("Lihan connected")
         self._set_connected(True)
 
