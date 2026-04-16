@@ -7,6 +7,7 @@ from serial.tools.list_ports import comports
 from hardware_device_base import HardwareSensorBase
 
 REGISTER_ITEMS = {
+    # Input registers
     "mode": {"hold_reg": False, "register": 3, "factor": None},
     "controller_status": {"hold_reg": False, "register": 4, "factor": None},
     "motor_status": {"hold_reg": False, "register": 5, "factor": None},
@@ -17,8 +18,8 @@ REGISTER_ITEMS = {
     "output_power": {"hold_reg": False, "register": 13, "factor": 1.0},
     "power_factor": {"hold_reg": False, "register": 14, "factor": 1.0},
     "bus_voltage": {"hold_reg": False, "register": 15, "factor": 10.0},
-    "temperature_status": {"hold_reg": False, "register": 16, "factor": 1.0},
-    "reject_temp": {"hold_reg": False, "register": 17, "factor": 1.0},
+    "temperature_status": {"hold_reg": False, "register": 16, "factor": None},
+    "reject_temp": {"hold_reg": False, "register": 17, "factor": 10.0},
     "motor_temp": {"hold_reg": False, "register": 18, "factor": 10.0},
     "controller_temp": {"hold_reg": False, "register": 19, "factor": 10.0},
     "ambient_temp": {"hold_reg": False, "register": 20, "factor": 10.0},
@@ -27,8 +28,9 @@ REGISTER_ITEMS = {
     "fan_speed_b": {"hold_reg": False, "register": 23, "factor": None},
     "fan_speed_c": {"hold_reg": False, "register": 24, "factor": None},
     "fan_speed_d": {"hold_reg": False, "register": 25, "factor": None},
-    "uptime": {"hold": False, "register": 26, "factor": 1.0},
-    "total_uptime": {"hold": False, "register": 27, "factor": 1.0},
+    "uptime": {"hold_reg": False, "register": 26, "factor": 1.0},
+    "total_uptime": {"hold_reg": False, "register": 27, "factor": 1.0},
+    # Holding registers
     "setpoint": {"hold_reg": True, "register": 2, "factor": 10.0},
     "set_voltage": {"hold_reg": True, "register": 3, "factor": 10.0},
     "cooling_rate": {"hold_reg": True, "register": 11, "factor": 100.0},
@@ -273,8 +275,9 @@ class Tc4382(HardwareSensorBase):
                 retval = self.read_holding_register(reg)
             else:
                 retval = self.read_register(reg)
-            if factor is not None:
-                retval = retval / factor
+            if retval:
+                if factor is not None:
+                    retval = retval / factor
         else:
             self.report_warning(f"Not a legal item: {item}")
         return retval
