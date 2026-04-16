@@ -127,9 +127,10 @@ class Tc4382(HardwareSensorBase):
         cmd += crc.to_bytes(2, 'little')
 
         self.ser.reset_input_buffer()
+        time.sleep(0.1)
         write_response = self.ser.write(cmd)
         self.report_debug(f"read_holding_register: write response: {write_response}")
-        time.sleep(0.1)
+        time.sleep(0.5)
 
         response = self.ser.read(100)
         self.report_debug(f"read_holding_register: read response: {response}")
@@ -144,9 +145,10 @@ class Tc4382(HardwareSensorBase):
         cmd += crc.to_bytes(2, 'little')
 
         self.ser.reset_input_buffer()
+        time.sleep(0.1)
         write_response = self.ser.write(cmd)
         self.report_debug(f"write_holding_register: write response: {write_response}")
-        time.sleep(0.1)
+        time.sleep(0.5)
 
         response = self.ser.read(100)
         self.report_debug(f"write_holding_register: read response: {response}")
