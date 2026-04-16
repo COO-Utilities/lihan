@@ -77,6 +77,7 @@ class Tc4382(HardwareSensorBase):
         self.ser = None
         self.port:str | None = None
         self.baudrate:int | None = None
+        self.configuration: int | None = None
 
     def connect(self, port: str, baud: int = 4800):  # pylint: disable=W0221
         """Connect to a Tc4382 Cryocooler device."""
@@ -176,10 +177,36 @@ class Tc4382(HardwareSensorBase):
         self.report_debug(f"stop: read response: {response}")
         return len(response) > 0
 
+    def set_power_mode(self) -> bool:
+        """Set power mode"""
+        new_config = 0 & self.configuration
+        return self.set_configuration(new_config)
+
+    def set_temperature_mode(self) -> bool:
+        """Set temperature mode"""
+        new_config = 1 & self.configuration
+        return self.set_configuration(new_config)
+
+    def set_configuration(self, new_config: int) -> bool:
+        """Set configuration"""
+        write_response = self.write_holding_register(30, new_config)
+        self.report_debug(f"set_temperature_mode: write response: {write_response}")
+        time.sleep(0.5)
+
+        response = self.ser.read(100)
+        self.report_debug(f"set_temperature_mode: read response: {response}")
+        self.get_device_configuration()
+        return len(response) > 0
+
     def set_temperature(self, temp_k) -> bool:
         """Set target temperature in Kelvin"""
         temp_raw = int(temp_k) * 10
         return self.write_holding_register(2, temp_raw)
+
+    def set_voltage(self, voltage) -> bool:
+        """Set target voltage in volts"""
+        voltage_raw = int(voltage) * 10
+        return self.write_holding_register(3, voltage_raw)
 
     def get_coldhead_temp(self) -> float | None:
         """Get coldhead temperature in Kelvin"""
@@ -228,6 +255,7 @@ class Tc4382(HardwareSensorBase):
         self.report_debug(f"config raw: {config}")
         conf = []
         if config is not None:
+            self.configuration = config
             # bit 0
             if config & (1 << 0) != 0:
                 conf.append("Temp PID enable")
