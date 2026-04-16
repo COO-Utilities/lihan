@@ -6,6 +6,43 @@ from serial.tools.list_ports import comports
 
 from hardware_device_base import HardwareSensorBase
 
+REGISTER_ITEMS = {
+    "mode": {"hold_reg": False, "register": 3, "factor": None},
+    "controller_status": {"hold_reg": False, "register": 4, "factor": None},
+    "motor_status": {"hold_reg": False, "register": 5, "factor": None},
+    "cold_head_status": {"hold_reg": False, "register": 6, "factor": None},
+    "cold_head_temp": {"hold_reg": False, "register": 9, "factor": 10.0},
+    "output_voltage": {"hold_reg": False, "register": 10, "factor": 10.0},
+    "output_current": {"hold_reg": False, "register": 12, "factor": 100.0},
+    "output_power": {"hold_reg": False, "register": 13, "factor": 1.0},
+    "power_factor": {"hold_reg": False, "register": 14, "factor": 1.0},
+    "bus_voltage": {"hold_reg": False, "register": 15, "factor": 10.0},
+    "temperature_status": {"hold_reg": False, "register": 16, "factor": 1.0},
+    "reject_temp": {"hold_reg": False, "register": 17, "factor": 1.0},
+    "motor_temp": {"hold_reg": False, "register": 18, "factor": 10.0},
+    "controller_temp": {"hold_reg": False, "register": 19, "factor": 10.0},
+    "ambient_temp": {"hold_reg": False, "register": 20, "factor": 10.0},
+    "fan_status": {"hold_reg": False, "register": 21, "factor": None},
+    "fan_speed_a": {"hold_reg": False, "register": 22, "factor": None},
+    "fan_speed_b": {"hold_reg": False, "register": 23, "factor": None},
+    "fan_speed_c": {"hold_reg": False, "register": 24, "factor": None},
+    "fan_speed_d": {"hold_reg": False, "register": 25, "factor": None},
+    "uptime": {"hold": False, "register": 26, "factor": 1.0},
+    "total_uptime": {"hold": False, "register": 27, "factor": 1.0},
+    "setpoint": {"hold_reg": True, "register": 2, "factor": 10.0},
+    "set_voltage": {"hold_reg": True, "register": 3, "factor": 10.0},
+    "cooling_rate": {"hold_reg": True, "register": 11, "factor": 100.0},
+    "comm_address": {"hold_reg": True, "register": 28, "factor": None},
+    "comm_baudrate": {"hold_reg": True, "register": 29, "factor": None},
+    "configuration": {"hold_reg": True, "register": 30, "factor": None},
+    "pid_p": {"hold_reg": True, "register": 32, "factor": 100.0},
+    "pid_i": {"hold_reg": True, "register": 33, "factor": 1000.0},
+    "pid_d": {"hold_reg": True, "register": 34, "factor": 1000.0},
+    "hc_pid_p": {"hold_reg": True, "register": 35, "factor": 100.0},
+    "hc_pid_i": {"hold_reg": True, "register": 36, "factor": 1000.0},
+    "hc_pid_d": {"hold_reg": True, "register": 37, "factor": 1000.0},
+}
+
 def find_port() -> str | None:
     """Find a Tc4382 Cryocooler device."""
     ports = comports()
@@ -137,7 +174,7 @@ class Tc4382(HardwareSensorBase):
 
     def set_temperature(self, temp_k) -> bool:
         """Set target temperature in Kelvin"""
-        temp_raw = int(temp_k)  # Don't multiply by 10!
+        temp_raw = int(temp_k) * 10
         return self.write_holding_register(2, temp_raw)
 
     def get_coldhead_temp(self) -> float | None:
@@ -224,41 +261,20 @@ class Tc4382(HardwareSensorBase):
         self.report_debug(f"Geting {item}")
         retval = None
         if "help" in item:
-            print("Available items:\ncold_head_temp\nreject_temp\nmotor_temp\ncontroller_temp\n"
-                  "ambient_temp\nvoltage\ncurrent\npower\nsetpoint\nmode\nuptime\ntotal_uptime")
+            print("Available items:\n")
+            for its in REGISTER_ITEMS:
+                print(its)
             return retval
-        if "cold_head_temp" in item:
-            retval =  self.get_coldhead_temp()
-        elif "reject_temp" in item:
-            reject_temp = self.read_register(17)
-            if reject_temp:
-                retval = reject_temp / 10.0
-        elif "motor_temp" in item:
-            motor_temp = self.read_register(18)
-            if motor_temp:
-                retval = motor_temp / 10.0
-        elif "controller_temp" in item:
-            controller_temp = self.read_register(19)
-            if controller_temp:
-                retval = controller_temp / 10.0
-        elif "ambient_temp" in item:
-            ambient_temp = self.read_register(20)
-            if ambient_temp:
-                retval = ambient_temp / 10.0
-        elif "voltage" in item:
-            retval = self.read_register(10)
-        elif "current" in item:
-            retval = self.read_register(12)
-        elif "power" in item:
-            retval = self.read_register(13)
-        elif "setpoint" in item:
-            retval = self.get_setpoint()
-        elif "mode" in item:
-            retval = self.read_register(3)
-        elif "uptime" in item:
-            retval = self.read_register(26)
-        elif "total_uptime" in item:
-            retval = self.read_register(27)
+        if item in REGISTER_ITEMS:
+            reg = REGISTER_ITEMS[item]["register"]
+            hreg = REGISTER_ITEMS[item]["hold_reg"]
+            factor = REGISTER_ITEMS[item]["factor"]
+            if hreg:
+                retval = self.read_holding_register(reg)
+            else:
+                retval = self.read_register(reg)
+            if factor is not None:
+                retval = retval / factor
         else:
             self.report_warning(f"Not a legal item: {item}")
         return retval
