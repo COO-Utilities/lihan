@@ -267,7 +267,11 @@ class Tc4382(HardwareSensorBase):
             for its in REGISTER_ITEMS:
                 print(its)
             return retval
-        if item in REGISTER_ITEMS:
+        if "configuration" in item:
+            retval = self.get_device_configuration()
+        elif "controller_status" in item:
+            retval = self.get_device_status()
+        elif item in REGISTER_ITEMS:
             reg = REGISTER_ITEMS[item]["register"]
             hreg = REGISTER_ITEMS[item]["hold_reg"]
             factor = REGISTER_ITEMS[item]["factor"]
