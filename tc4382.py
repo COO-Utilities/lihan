@@ -190,11 +190,11 @@ class Tc4382(HardwareSensorBase):
     def set_configuration(self, new_config: int) -> bool:
         """Set configuration"""
         write_response = self.write_holding_register(30, new_config)
-        self.report_debug(f"set_temperature_mode: write response: {write_response}")
+        self.report_debug(f"set_configuration: write response: {write_response}")
         time.sleep(0.5)
 
         response = self.ser.read(100)
-        self.report_debug(f"set_temperature_mode: read response: {response}")
+        self.report_debug(f"set_configuration: read response: {response}")
         self.get_device_configuration()
         return len(response) > 0
 
