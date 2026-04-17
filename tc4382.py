@@ -1,5 +1,7 @@
 """Low Level Driver module for Lihan TC4382 Cryocooler"""
 import time
+import argparse
+import sys
 from typing import Union
 import serial
 from serial.tools.list_ports import comports
@@ -84,7 +86,7 @@ class Tc4382(HardwareSensorBase):
         self.report_info(f"Connecting to Lihan on {port}...")
         self.port = port
         self.baudrate = baud
-        self.ser = serial.Serial(port=self.port, baudrate=self.baudrate, timeout=self.read_timeout)
+        self.ser = serial.Serial(port=self.port, baudrate=baud, timeout=self.read_timeout)
         time.sleep(1)
         # clear input buffer
         self.ser.reset_input_buffer()
@@ -315,3 +317,71 @@ class Tc4382(HardwareSensorBase):
         else:
             self.report_warning(f"Not a legal item: {item}")
         return retval
+
+# pylint: disable=too-many-branches
+def main():
+    """CLI for the Lihan TC4382 Cryocooler device."""
+
+    parser = argparse.ArgumentParser(
+        description="Lihan TC4382 Cryocooler CLI.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+    Examples:
+        lihan get cold_head_temp
+        lihan set 77
+        lihan start
+        lihan stop
+        """)
+
+    parser.add_argument("action", choices=["get", "set", "start", "stop"],
+                        help="Action to perform")
+    parser.add_argument("param", nargs='?',
+                        help="Parameter (e.g., 'output_power' for get, or '77' for set)")
+    parser.add_argument("--port", help="Tc4382 serial port (e.g. /dev/ttyUSB0)")
+    parser.add_argument("--baud", type=int, default=4800, help="Baud rate (default: 4800)")
+
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
+
+    args = parser.parse_args()
+
+    target_port = args.port if args.port else find_port()
+    if not target_port:
+        print("Error: Device not found.  Please connect the device or specify --port.")
+        sys.exit(1)
+
+    lihan = Tc4382(log=False)
+
+    try:
+        lihan.connect(target_port, args.baud)
+
+        if args.action == "get":
+            if not args.param:
+                print("Error: 'get' requires a parameter.")
+                print("Type 'lihan get help' for a list of valid parameters.")
+            else:
+                result = lihan.get_atomic_value(args.param)
+                if result is not None:
+                    print(result)
+        elif args.action == "set":
+            if not args.param:
+                print("Error: 'set' requires a temperature value (e.g., set 77).")
+            else:
+                success = lihan.set_temperature(float(args.param))
+                print(f"Set temperature to {args.param}K: {'SUCCESS' if success else 'FAILED'}")
+        elif args.action == "start":
+            success = lihan.start()
+            print(f"Cryocooler start: {'SUCCESS' if success else 'FAILED'}")
+        elif args.action == "stop":
+            success = lihan.stop()
+            print(f"Cryocooler stop: {'SUCCESS' if success else 'FAILED'}")
+    # pylint: disable=broad-except
+    except Exception as e:
+        print(f"Cryocooler error: {e}")
+    finally:
+        if lihan.is_connected():
+            lihan.disconnect()
+
+if __name__ == "__main__":
+    main()
