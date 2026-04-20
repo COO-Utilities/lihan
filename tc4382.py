@@ -311,7 +311,7 @@ class Tc4382(HardwareSensorBase):
                 retval = self.read_holding_register(reg)
             else:
                 retval = self.read_register(reg)
-            if retval:
+            if retval is not None:
                 if factor is not None:
                     retval = retval / factor
         else:
