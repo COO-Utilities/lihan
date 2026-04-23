@@ -200,9 +200,9 @@ class Tc4382(HardwareSensorBase):
         self.get_device_configuration()
         return len(response) > 0
 
-    def set_temperature(self, temp_k) -> bool:
+    def set_temperature(self, temp_k: float) -> bool:
         """Set target temperature in Kelvin"""
-        temp_raw = int(temp_k) * 10
+        temp_raw = int(temp_k * 10.0)
         return self.write_holding_register(2, temp_raw)
 
     def set_voltage(self, voltage) -> bool:
