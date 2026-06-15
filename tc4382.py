@@ -204,7 +204,8 @@ class Tc4382(HardwareSensorBase):
 
     def set_temperature(self, temp_k: float) -> bool:
         """Set target temperature in Kelvin"""
-        temp_raw = int(temp_k * 10.0)
+        # temp_raw = int(temp_k * 10.0)  # this should work, but is too large by 10 times
+        temp_raw = int(temp_k)
         return self.write_holding_register(2, temp_raw)
 
     def set_voltage(self, voltage) -> bool:
