@@ -208,9 +208,9 @@ class Tc4382(HardwareSensorBase):
         temp_raw = int(temp_k)
         return self.write_holding_register(2, temp_raw)
 
-    def set_voltage(self, voltage) -> bool:
+    def set_voltage(self, voltage: float) -> bool:
         """Set target voltage in volts"""
-        voltage_raw = int(voltage) * 10
+        voltage_raw = int(voltage * 10.0)
         return self.write_holding_register(3, voltage_raw)
 
     def get_coldhead_temp(self) -> float | None:
@@ -227,6 +227,14 @@ class Tc4382(HardwareSensorBase):
         self.report_debug(f"get_setpoint raw value: {setpoint_raw}")
         if setpoint_raw:
             return setpoint_raw / 10.0
+        return None
+
+    def get_set_voltage(self):
+        """Get voltage setpoint"""
+        voltage_raw = self.read_holding_register(3)
+        self.report_debug(f"get_set_voltage raw value: {voltage_raw}")
+        if voltage_raw:
+            return voltage_raw / 10.0
         return None
 
     def get_device_status(self):
