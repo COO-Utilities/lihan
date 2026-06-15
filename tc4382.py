@@ -128,6 +128,7 @@ class Tc4382(HardwareSensorBase):
         cmd = bytes([0x01, 0x03, 0x00, address, 0x00, 0x01])
         crc = calculate_crc16(cmd)
         cmd += crc.to_bytes(2, 'little')
+        self.report_debug(f"read_holding_register: sending: {cmd}")
 
         self.ser.reset_input_buffer()
         time.sleep(0.1)
@@ -146,6 +147,7 @@ class Tc4382(HardwareSensorBase):
         cmd = bytes([0x01, 0x06]) + address.to_bytes(2, 'big') + value.to_bytes(2, 'big')
         crc = calculate_crc16(cmd)
         cmd += crc.to_bytes(2, 'little')
+        self.report_debug(f"write_holding_register: sending: {cmd}")
 
         self.ser.reset_input_buffer()
         time.sleep(0.1)
