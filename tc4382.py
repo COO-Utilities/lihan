@@ -84,7 +84,10 @@ class Tc4382(HardwareSensorBase):
     def connect(self, port: str, baud: int = 4800):  # pylint: disable=W0221
         """Connect to a Tc4382 Cryocooler device."""
         self.report_info(f"Connecting to Lihan on {port}...")
-        self.port = port
+        found_port = find_port()
+        if port != found_port:
+            self.report_warning(f"Lihan port changed from {port} to {found_port}")
+        self.port = found_port
         self.baudrate = baud
         self.ser = serial.Serial(port=self.port, baudrate=baud, timeout=self.read_timeout)
         time.sleep(1)
