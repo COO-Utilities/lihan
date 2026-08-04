@@ -10,10 +10,13 @@ from hardware_device_base import HardwareSensorBase
 
 REGISTER_ITEMS = {
     # Input registers
+    "status_flags":     {"hold_reg": False, "register": 2, "factor": None},
     "mode": {"hold_reg": False, "register": 3, "factor": None},
     "controller_status": {"hold_reg": False, "register": 4, "factor": None},
     "motor_status": {"hold_reg": False, "register": 5, "factor": None},
-    "cold_head_status": {"hold_reg": False, "register": 6, "factor": None},
+    "error_code_hi":    {"hold_reg": False, "register": 6, "factor": None},
+    "error_code_lo":    {"hold_reg": False, "register": 7, "factor": None},
+    "cold_head_status": {"hold_reg": False, "register": 8, "factor": None},
     "cold_head_temp": {"hold_reg": False, "register": 9, "factor": 10.0},
     "output_voltage": {"hold_reg": False, "register": 10, "factor": 10.0},
     "output_current": {"hold_reg": False, "register": 12, "factor": 100.0},
@@ -21,10 +24,10 @@ REGISTER_ITEMS = {
     "power_factor": {"hold_reg": False, "register": 14, "factor": 1.0},
     "bus_voltage": {"hold_reg": False, "register": 15, "factor": 10.0},
     "temperature_status": {"hold_reg": False, "register": 16, "factor": None},
-    "reject_temp": {"hold_reg": False, "register": 17, "factor": 10.0},
-    "motor_temp": {"hold_reg": False, "register": 18, "factor": 10.0},
-    "controller_temp": {"hold_reg": False, "register": 19, "factor": 10.0},
-    "ambient_temp": {"hold_reg": False, "register": 20, "factor": 10.0},
+    "reject_temp": {"hold_reg": False, "register": 17, "factor": 10.0, "signed": True},
+    "motor_temp": {"hold_reg": False, "register": 18, "factor": 10.0, "signed": True},
+    "controller_temp": {"hold_reg": False, "register": 19, "factor": 10.0, "signed": True},
+    "ambient_temp": {"hold_reg": False, "register": 20, "factor": 10.0, "signed": True},
     "fan_status": {"hold_reg": False, "register": 21, "factor": None},
     "fan_speed_a": {"hold_reg": False, "register": 22, "factor": None},
     "fan_speed_b": {"hold_reg": False, "register": 23, "factor": None},
@@ -69,7 +72,7 @@ def calculate_crc16(data):
     return crc
 
 class Tc4382(HardwareSensorBase):
-    """A driver class for the Lihan TC4382 Cryocooler using pymodbus."""
+    """A driver class for the Lihan TC4382 Cryocooler (Modbus RTU over pyserial)."""
     def __init__(self, log: bool = True, logfile: str = __name__.rsplit(".", 1)[-1],
                  read_timeout: float = 1.0):
         """Instantiate a Tc4382 driver object."""
@@ -89,7 +92,7 @@ class Tc4382(HardwareSensorBase):
             self.report_warning(f"Lihan port changed from {port} to {found_port}")
         self.port = found_port
         self.baudrate = baud
-        self.ser = serial.Serial(port=self.port, baudrate=baud, timeout=self.read_timeout)
+        self.ser = serial.Serial(port=self.port, baudrate=baud, timeout=self.read_timeout, exclusive=True)
         time.sleep(1)
         # clear input buffer
         self.ser.reset_input_buffer()
@@ -109,41 +112,49 @@ class Tc4382(HardwareSensorBase):
             self.report_error("Lihan not connected")
             self._set_connected(False)
 
-    def read_register(self, address) -> int | None:
+    def read_register(self, address, signed=False) -> int | None:
         """Read a single input register"""
         cmd = bytes([0x01, 0x04, 0x00, address, 0x00, 0x01])
         crc = calculate_crc16(cmd)
         cmd += crc.to_bytes(2, 'little')
 
         self.ser.reset_input_buffer()
-        write_response = self.ser.write(cmd)
-        self.report_debug(f"read_register: write response: {write_response}")
+        self.ser.write(cmd)
         time.sleep(0.1)
 
-        response = self.ser.read(100)
-        self.report_debug(f"read_register: read response: {response}")
-        if len(response) >= 5:
-            return int.from_bytes(response[3:5], byteorder='big')
-        return None
+        response = self.ser.read(7)
+        if len(response) != 7:
+            self.report_error(f"read_register {address}: short response: {response!r}")
+            return None
+        if response[0] != 0x01 or response[1] != 0x04 or response[2] != 0x02:
+            self.report_error(f"read_register {address}: bad header: {response!r}")
+            return None
+        if calculate_crc16(response[:5]) != int.from_bytes(response[5:7], 'little'):
+            self.report_error(f"read_register {address}: CRC mismatch: {response!r}")
+            return None
+        return int.from_bytes(response[3:5], byteorder='big', signed=signed)
 
     def read_holding_register(self, address) -> int | None:
         """Read a single holding register (for setpoints)"""
         cmd = bytes([0x01, 0x03, 0x00, address, 0x00, 0x01])
         crc = calculate_crc16(cmd)
         cmd += crc.to_bytes(2, 'little')
-        self.report_debug(f"read_holding_register: sending: {cmd}")
 
         self.ser.reset_input_buffer()
+        self.ser.write(cmd)
         time.sleep(0.1)
-        write_response = self.ser.write(cmd)
-        self.report_debug(f"read_holding_register: write response: {write_response}")
-        time.sleep(0.5)
 
-        response = self.ser.read(100)
-        self.report_debug(f"read_holding_register: read response: {response}")
-        if len(response) >= 5:
-            return int.from_bytes(response[3:5], byteorder='big')
-        return None
+        response = self.ser.read(7)
+        if len(response) != 7:
+            self.report_error(f"read_holding_register {address}: short response: {response!r}")
+            return None
+        if response[0] != 0x01 or response[1] != 0x03 or response[2] != 0x02:
+            self.report_error(f"read_holding_register {address}: bad header: {response!r}")
+            return None
+        if calculate_crc16(response[:5]) != int.from_bytes(response[5:7], 'little'):
+            self.report_error(f"read_holding_register {address}: CRC mismatch: {response!r}")
+            return None
+        return int.from_bytes(response[3:5], byteorder='big')
 
     def write_holding_register(self, address, value) -> bool:
         """Write single holding register"""
@@ -240,6 +251,21 @@ class Tc4382(HardwareSensorBase):
             return voltage_raw / 10.0
         return None
 
+    def get_error_code(self) -> int | None:
+        """Read the 32-bit error code from input registers 6 and 7.
+
+        Two single-register reads: this firmware answers multi-register
+        requests (per protocol doc R3.1 sec. 5) with a single register,
+        so an atomic two-register read is not possible.
+        """
+        hi = self.read_register(6)
+        if hi is None:
+            return None
+        lo = self.read_register(7)
+        if lo is None:
+            return None
+        return (hi << 16) | lo
+
     def get_device_status(self):
         """Get controller status"""
         status = self.read_register(2)
@@ -312,11 +338,12 @@ class Tc4382(HardwareSensorBase):
             print("Available items:\n")
             for its in REGISTER_ITEMS:
                 print(its)
+            print("error_code")
             return retval
         if "configuration" in item:
             retval = self.get_device_configuration()
-        elif "controller_status" in item:
-            retval = self.get_device_status()
+        elif item == "error_code":
+            retval = self.get_error_code()
         elif item in REGISTER_ITEMS:
             reg = REGISTER_ITEMS[item]["register"]
             hreg = REGISTER_ITEMS[item]["hold_reg"]
@@ -324,7 +351,7 @@ class Tc4382(HardwareSensorBase):
             if hreg:
                 retval = self.read_holding_register(reg)
             else:
-                retval = self.read_register(reg)
+                retval = self.read_register(reg, signed=REGISTER_ITEMS[item].get("signed", False))
             if retval is not None:
                 if factor is not None:
                     retval = retval / factor
