@@ -173,6 +173,17 @@ class Tc4382(HardwareSensorBase):
         self.report_debug(f"write_holding_register: read response: {response}")
         return len(response) > 0
 
+    def fault_clear(self) -> bool:
+        """Clear a fault"""
+        cmd = bytes.fromhex('01050030FF008C35')
+        write_response = self.ser.write(cmd)
+        self.report_debug(f"fault_clear: write response: {write_response}")
+        time.sleep(0.5)
+
+        response = self.ser.read(100)
+        self.report_debug(f"fault_clear: read response: {response}")
+        return len(response) > 0
+
     def start(self) -> bool:
         """Start the cryocooler"""
         cmd = bytes.fromhex('01050020FF008DF0')
@@ -372,9 +383,10 @@ def main():
         lihan set 77
         lihan start
         lihan stop
+        lihan clear
         """)
 
-    parser.add_argument("action", choices=["get", "set", "start", "stop"],
+    parser.add_argument("action", choices=["get", "set", "start", "stop", "clear"],
                         help="Action to perform")
     parser.add_argument("param", nargs='?',
                         help="Parameter (e.g., 'output_power' for get, or '77' for set)")
@@ -417,6 +429,9 @@ def main():
         elif args.action == "stop":
             success = lihan.stop()
             print(f"Cryocooler stop: {'SUCCESS' if success else 'FAILED'}")
+        elif args.action == "clear":
+            success = lihan.fault_clear()
+            print(f"Cryocooler fault_clear: {'SUCCESS' if success else 'FAILED'}")
     # pylint: disable=broad-except
     except Exception as e:
         print(f"Cryocooler error: {e}")
