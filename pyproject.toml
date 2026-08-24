@@ -7,7 +7,7 @@ name = "lihan"
 version = "0.1.0"
 dependencies = [
     "pyserial>=3.4",
-    "hardware_device_base@git+https://github.com/COO-Utilities/hardware_device_base#egg=main"
+    "hardware_device_base@git+https://github.com/COO-Utilities/hardware_device_base.git@v1.0.0"
 ]
 description = "A collection of Python interfaces for communicating with Lihan cryocooler control."
 authors = [
